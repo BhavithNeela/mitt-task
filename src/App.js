@@ -1,14 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
-  // Using useState to manage state in functional components
   const [notes, setNotes] = useState([]);
-  const [note, setNote] = useState({ title: '', description: '' });
+  const [note, setNote] = useState({ title: '', description: '', image: null });
+  const [imagePreview, setImagePreview] = useState('');
 
-  // Function to load notes from local storage on component mount
   useEffect(() => {
     const loadNotesFromLocalStorage = () => {
       const storedNotes = JSON.parse(localStorage.getItem('notes'));
@@ -18,31 +16,45 @@ function App() {
     };
     
     loadNotesFromLocalStorage();
-  }, []); // Empty dependency array ensures this effect runs only once on initial render
+  }, []);
 
-  // Function to save notes to local storage
   const saveNotesToLocalStorage = (updatedNotes) => {
     localStorage.setItem('notes', JSON.stringify(updatedNotes));  
   };
 
-  // This function handles the addition of a new note
   const handleAddNew = () => {
-    // Adding the current note to the notes array
     const updatedNotes = [...notes, note];
     setNotes(updatedNotes);
-    // Resetting the note object to clear the input fields
-    setNote({ title: '', description: '' });
+    setNote({ title: '', description: '', image: null });
+    setImagePreview(''); // Clear image preview
 
-    // Saving updated notes to local storage
+    // Clear and re-set the value of the file input
+    const fileInput = document.querySelector('input[type="file"]');
+    fileInput.value = ''; // Clear the value
+    // Re-set the value to an empty string to ensure onChange event is triggered
+    fileInput.value = '';
+    
     saveNotesToLocalStorage(updatedNotes);
   };
 
-  // This function handles changes in the input fields and updates the note object
   const handleChange = (e) => {
-    setNote({
-      ...note,
-      [e.target.name]: e.target.value // Dynamically set the property based on input field name
-    });
+    if (e.target.name === 'image') {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNote({
+          ...note,
+          image: reader.result
+        });
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setNote({
+        ...note,
+        [e.target.name]: e.target.value
+      });
+    }
   };
 
   return (
@@ -50,32 +62,32 @@ function App() {
       <h1 className='note'>Notes</h1>
       <br />
       <div className='mainDiv'>
-      <div className="mt-4">
-        <h2>All Notes</h2>
-        <ul>
-          {notes.map((note, index) => (
-            <li key={index}>
-              <strong>Title:</strong> {note.title}, <strong>Description:</strong> {note.description}
-            </li>
-          ))}
-        </ul>
+        <div className="mt-4">
+          <h2>All Notes</h2>
+          <ul>
+            {notes.map((note, index) => (
+              <li key={index}>
+                <strong>Title:</strong> {note.title}, <strong>Description:</strong> {note.description}
+                {note.image && <img src={note.image} alt="Note Image" style={{ maxWidth: '100px', maxHeight: '100px' }} />}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className='addnote '>
+          <label>Title : </label>
+          <input className='mt-4 description' style={{marginLeft:"60px"}} type='text' name='title' value={note.title} onChange={handleChange} />
+          <br />
+          <label>Description : </label>
+          <input className='mt-4 description' style={{marginLeft:"10px"}} type='text' name='description' value={note.description} onChange={handleChange} />
+          <br />
+          <label>Image : </label>
+          <input className='mt-4 description' style={{marginLeft:"10px"}} type='file' accept="image/*" name='image' onChange={handleChange} />
+          {imagePreview && <img src={imagePreview} alt="Note Image Preview" style={{ maxWidth: '100px', maxHeight: '100px' }} />}
+          <br />
+          <button className='mt-4 btn btn-primary' onClick={handleAddNew}>Add Note</button>
+        </div>
       </div>
-      <div className='addnote'>
-      {/* Input for Title */}
-      <label>Title : </label>
-      <input  className='mt-4'  type='text' name='title'  value={note.title} onChange={handleChange} />
-      <br />
-      {/* Input for Description */}
-      <label>Description : </label>
-      <input className='mt-4' type='text' name='description'value={note.description} onChange={handleChange}
-      />
-      <br />
-      {/* Button to Add Note */}
-      <button className='mt-4 btn btn-primary' onClick={handleAddNew}>Add Note</button>
-</div>
-</div>
-   
-      </div>
+    </div>
   );
 }
 
